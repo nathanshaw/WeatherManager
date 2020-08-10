@@ -3,6 +3,7 @@
 
 // #include "../ValueTracker.h"
 #include "SHTSensor.h"
+#include "Wire.h"
 
 class WeatherManager {
     public:
@@ -35,26 +36,30 @@ class WeatherManager {
         bool temp_shutdown = false;
 };
 
+
 WeatherManager::WeatherManager(float h, float t, float hi) {
     humid_high_thresh = h;
     temp_high_thresh = t;
     temp_historesis = hi;
 }
 
+
 bool WeatherManager::init() {
+    Wire.begin();
     if (sensor.init()) {
         Serial.println("SHT temp/humid sensor was initialised");
         sensor_active = true;
         return true;
     } else {
         for (int i = 0; i < 1000; i++) {
-            Serial.print("ERROR, SHT init() failed, there will be no active temp/humid sensor");
+            Serial.println("ERROR, SHT init() failed, there will be no active temp/humid sensor");
             delay(500);
         }
         sensor_active = false;
         return false;
     }
 }
+
 
 bool WeatherManager::update(){
     // return false if no update is made and true 
@@ -83,6 +88,5 @@ bool WeatherManager::update(){
     // conditions and we can exit the program
     return false;
 }
-
 
 #endif // __WEATHER_MANAGER_H__
