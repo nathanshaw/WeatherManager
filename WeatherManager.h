@@ -6,15 +6,15 @@
 
 class WeatherManager {
     public:
-        WeatherManager(float h, float t);
-        bool setup();
+        WeatherManager(float h, float t, float hi);
+        bool init();
         bool update();
         // bool setAccuracy();
 
     private:
         ////////////////// Sensor /////////////////////////
         float sensor_active = false;
-        SHTSensor & sensor;
+        SHTSensor sensor;
 
         /////////////////// Humidity //////////////////////
         float humid = 0.0;
@@ -27,27 +27,27 @@ class WeatherManager {
         /////////////////// Temperature ///////////////////
         float temp = 0.0;
         float last_temp = 0.0;
+        float temp_high_thresh;
         // indicates how much historesis is applied to the
         // high temp threshold to return to normal operation
         // this indicates if a temperature shutdown is recommended
         float temp_historesis;
-        bool humid_shutdown = false;
+        bool temp_shutdown = false;
 };
 
-WeatherManager::WeatherManager(float h, float t, float h) {
+WeatherManager::WeatherManager(float h, float t, float hi) {
     humid_high_thresh = h;
     temp_high_thresh = t;
-    temp_historesis = h;
+    temp_historesis = hi;
 }
 
-WeatherManager::setup() {
+bool WeatherManager::init() {
     if (sensor.init()) {
         Serial.println("SHT temp/humid sensor was initialised");
         sensor_active = true;
         return true;
-
     } else {
-        for (int i = 0) i < 1000; i++) {
+        for (int i = 0; i < 1000; i++) {
             Serial.print("ERROR, SHT init() failed, there will be no active temp/humid sensor");
             delay(500);
         }
@@ -56,7 +56,7 @@ WeatherManager::setup() {
     }
 }
 
-bool update(){
+bool WeatherManager::update(){
     // return false if no update is made and true 
     // if an update is made
     // check to see if the sensor is ready for a new reading
