@@ -1,0 +1,7 @@
+WeatherManager          KEYWORD1
+init                    KEYWORD2
+update                  KEYWORD2
+getTempShutdown         KEYWORD2
+getHumidityShutdown     KEYWORD2
+getHumidity             KEYWORD2
+getTemperature          KEYWORD2

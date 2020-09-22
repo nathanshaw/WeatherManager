@@ -1,16 +1,20 @@
 #ifndef __WEATHER_MANAGER_H__
 #define __WEATHER_MANAGER_H__
 
-#include "../ValueTracker/ValueTrackerFloat.h"
+#include <ValueTracker.h>
 #include "SHTSensor.h"
 #include "Wire.h"
 
 class WeatherManager {
     public:
-        WeatherManager(float h, float t, float hi);
+        WeatherManager(float humid_high, float temp_high, float historesis);
         bool init();
         bool update();
-        // bool setAccuracy();
+        bool getTempShutdown();
+        bool getHumidityShutdown();
+        float getTemperature() {return temp;};
+        float getHumidity() {return humid;};
+        void print();
 
     private:
         ////////////////// Sensor /////////////////////////
@@ -19,7 +23,8 @@ class WeatherManager {
 
         /////////////////// Humidity //////////////////////
         float humid = 0.0;
-        ValueTrackerFloat humid_tracker(*humid);
+        // value tracker is set to not conduct a rolling average
+        ValueTrackerFloat humid_tracker = ValueTrackerFloat(&humid, 1.0);
 
         float humid_high_thresh;
         // this will indicate if the WeatherManager recommends
@@ -28,7 +33,8 @@ class WeatherManager {
 
         /////////////////// Temperature ///////////////////
         float temp = 0.0;
-        ValueTrackerFloat temp_tracker(*temp);
+        // value tracker is set to not conduct a rolling average
+        ValueTrackerFloat temp_tracker = ValueTrackerFloat(&temp, 1.0);
 
         float last_temp = 0.0;
         float temp_high_thresh;
@@ -40,10 +46,16 @@ class WeatherManager {
 };
 
 
-WeatherManager::WeatherManager(float h, float t, float hi) {
-    humid_high_thresh = h;
-    temp_high_thresh = t;
-    temp_historesis = hi;
+WeatherManager::WeatherManager(float humid_high, float temp_high, float historesis) {
+    humid_high_thresh = humid_high;
+    temp_high_thresh = temp_high;
+    temp_historesis = historesis;
+}
+
+void WeatherManager::print() {
+    Serial.println("---------- WeatherManager Stats --------------");
+    temp_tracker.printStats();
+    humid_tracker.printStats();
 }
 
 
@@ -52,12 +64,11 @@ bool WeatherManager::init() {
     if (sensor.init()) {
         Serial.println("SHT temp/humid sensor was initialised");
         sensor_active = true;
-        // TODO need to set the sensor integration time and sensor gain
         return true;
     } else {
-        for (int i = 0; i < 1000; i++) {
+        for (int i = 0; i < 10; i++) {
             Serial.println("ERROR, SHT init() failed, there will be no active temp/humid sensor");
-            delay(500);
+            delay(1000);
         }
         sensor_active = false;
         return false;
@@ -69,9 +80,9 @@ bool WeatherManager::update(){
     // return false if no update is made and true 
     // if an update is made
     // check to see if the sensor is ready for a new reading
-    if (sensor.readSample()) {
+    if (sensor.readSample() && sensor_active) {
         humid = sensor.getHumidity();
-        humid_tracker.update()
+        humid_tracker.update();
         if (humid >= humid_high_thresh) {
             humid_shutdown = true;
             return true;
