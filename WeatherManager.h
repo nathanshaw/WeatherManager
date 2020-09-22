@@ -2,16 +2,16 @@
 #define __WEATHER_MANAGER_H__
 
 #include <ValueTracker.h>
-#include "SHTSensor.h"
-#include "Wire.h"
+#include <SHTSensor.h>
+#include <Wire.h>
 
 class WeatherManager {
     public:
         WeatherManager(float humid_high, float temp_high, float historesis);
         bool init();
         bool update();
-        bool getTempShutdown();
-        bool getHumidityShutdown();
+        bool getTempShutdown(){return temp_shutdown;};
+        bool getHumidityShutdown(){return humid_shutdown;};
         float getTemperature() {return temp;};
         float getHumidity() {return humid;};
         void print();
@@ -45,7 +45,6 @@ class WeatherManager {
         bool temp_shutdown = false;
 };
 
-
 WeatherManager::WeatherManager(float humid_high, float temp_high, float historesis) {
     humid_high_thresh = humid_high;
     temp_high_thresh = temp_high;
@@ -54,27 +53,35 @@ WeatherManager::WeatherManager(float humid_high, float temp_high, float histores
 
 void WeatherManager::print() {
     Serial.println("---------- WeatherManager Stats --------------");
+    Serial.println("Printing temperature value tracker stats");
     temp_tracker.printStats();
+    Serial.println("Printing humidity value tracker stats");
     humid_tracker.printStats();
 }
 
-
 bool WeatherManager::init() {
     Wire.begin();
+    delay(5000);
     if (sensor.init()) {
         Serial.println("SHT temp/humid sensor was initialised");
         sensor_active = true;
-        return true;
     } else {
-        for (int i = 0; i < 10; i++) {
-            Serial.println("ERROR, SHT init() failed, there will be no active temp/humid sensor");
-            delay(1000);
+        for (int i = 2; i < 20; i++) {
+            if (sensor.init() == false) {
+                Serial.println("ERROR, SHT init() failed");
+                sensor_active = false;
+                delay(1000);
+            }
+            else {
+                Serial.print("Attempt #");Serial.print(i);
+                Serial.println(" was a success, SHT is now initalised");
+                sensor_active = true;
+                break;
+            }
         }
-        sensor_active = false;
-        return false;
     }
+    return sensor_active;
 }
-
 
 bool WeatherManager::update(){
     // return false if no update is made and true 
@@ -95,7 +102,10 @@ bool WeatherManager::update(){
         } else if (temp <= (temp_high_thresh * (1.0 - temp_historesis))){ 
             temp_shutdown = false;
         }
-    } else {
+    } else if (sensor_active == false) {
+        Serial.print("ERROR - the SHTC3 temp/humid sensor is not active");
+
+    }else {
         Serial.println("SHT sensor is not ready for a new reading, exiting update");
     }
     // if we make it this far then there are no emergency shudown

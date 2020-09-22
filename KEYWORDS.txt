@@ -5,3 +5,4 @@ getTempShutdown         KEYWORD2
 getHumidityShutdown     KEYWORD2
 getHumidity             KEYWORD2
 getTemperature          KEYWORD2
+print                   KEYWORD2
