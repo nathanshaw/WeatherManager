@@ -17,7 +17,7 @@ void loop() {
   // put your main code here, to run repeatedly:
   em = 0;
   weather_manager.update();
-  Serial.print("micros for update : );Serial.println(em)
+  Serial.print("micros for update : ");Serial.println(em);
   if (weather_manager.getHumidityShutdown()) {
     Serial.println("HUMIDITY SHUTDOWN");
     delay(10000);

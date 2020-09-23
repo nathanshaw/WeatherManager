@@ -61,14 +61,14 @@ void WeatherManager::print() {
 
 bool WeatherManager::init() {
     Wire.begin();
-    delay(5000);
+    delay(5000); // let the bus stabilise
     if (sensor.init()) {
         Serial.println("SHT temp/humid sensor was initialised");
         sensor_active = true;
     } else {
         for (int i = 2; i < 20; i++) {
             if (sensor.init() == false) {
-                Serial.println("ERROR, SHT init() failed");
+                Serial.print("ERROR, SHT init() failed attempt #");Serial.println(i);
                 sensor_active = false;
                 delay(1000);
             }
@@ -87,7 +87,11 @@ bool WeatherManager::update(){
     // return false if no update is made and true 
     // if an update is made
     // check to see if the sensor is ready for a new reading
-    if (sensor.readSample() && sensor_active) {
+    if (sensor_active == false) {
+        Serial.print("ERROR - the SHTC3 temp/humid sensor is not active");
+        return false;
+    }
+    if (sensor.readSample()) {
         humid = sensor.getHumidity();
         humid_tracker.update();
         if (humid >= humid_high_thresh) {
@@ -102,10 +106,7 @@ bool WeatherManager::update(){
         } else if (temp <= (temp_high_thresh * (1.0 - temp_historesis))){ 
             temp_shutdown = false;
         }
-    } else if (sensor_active == false) {
-        Serial.print("ERROR - the SHTC3 temp/humid sensor is not active");
-
-    }else {
+    } else {
         Serial.println("SHT sensor is not ready for a new reading, exiting update");
     }
     // if we make it this far then there are no emergency shudown
