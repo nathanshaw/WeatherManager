@@ -14,10 +14,15 @@ class WeatherManager {
         bool getHumidityShutdown(){return humid_shutdown;};
         float getTemperature() {return temp;};
         float getHumidity() {return humid;};
+
         void print();
+        void setPrintReadings(bool p){p_readings = p;};
 
     private:
-        elapsedMillis last_reading;
+
+        bool p_readings = false;
+
+        elapsedMillis last_reading_time;
         unsigned long update_delay;
         ////////////////// Sensor /////////////////////////
         float sensor_active = false;
@@ -92,29 +97,33 @@ bool WeatherManager::update(){
     // if an update is made
     // check to see if the sensor is ready for a new reading
     if (sensor_active == false) {
-        Serial.print("ERROR - the SHTC3 temp/humid sensor is not active");
+        dprint(p_readings, "ERROR - the SHTC3 temp/humid sensor is not active");
         return false;
     }
-    if (last_reading > update_delay) {
+    if (last_reading_time > update_delay) {
         if (sensor.readSample()) {
             humid = sensor.getHumidity();
             humid_tracker.update();
-            // Serial.print("humid:\t");Serial.println(humid);
+            dprint(p_readings, "humid:\t");dprintln(p_readings, humid);
             if (humid >= humid_high_thresh) {
+                dprint(p_readings, "this is higher than the humid_high_thresh of: ");dprintln(p_readings, humid_high_thresh);
+                dprintln(p_readings, "FLAGGING A HUMIDITY SHUTDOWN CONDITION");
                 humid_shutdown = true;
-                return true;
             }
             temp = sensor.getTemperature();
             temp_tracker.update();
-            // Serial.print("temp:\t");Serial.println(temp);
+            dprint(p_readings, "temp:\t");dprintln(p_readings, temp);
             if (temp >= temp_high_thresh && temp_shutdown == false) {
+                dprint(p_readings, "this is higher than the temp_high_thresh of: ");dprintln(p_readings, temp_high_thresh);
+                dprintln(p_readings, "FLAGGING A TEMPERATURE SHUTDOWN CONDITION");
                 temp_shutdown = true;
-                return true;
             } else if (temp <= (temp_high_thresh * (1.0 - temp_historesis))){ 
                 temp_shutdown = false;
             }
+            last_reading_time = 0;
+            return true;
         } else {
-            Serial.println("SHT sensor is not ready for a new reading, exiting update");
+            dprintln(p_readings, "SHT sensor is not ready for a new reading, exiting update");
         }
         // if we make it this far then there are no emergency shudown
         // conditions and we can exit the program
