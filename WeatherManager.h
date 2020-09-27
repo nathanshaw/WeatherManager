@@ -1,7 +1,7 @@
 #ifndef __WEATHER_MANAGER_H__
 #define __WEATHER_MANAGER_H__
 
-#include <ValueTracker.h>
+#include <ValueTrackerDouble.h>
 #include <SHTSensor.h>
 #include <Wire.h>
 
@@ -29,9 +29,9 @@ class WeatherManager {
         SHTSensor sensor;
 
         /////////////////// Humidity //////////////////////
-        float humid = 0.0;
+        double humid = 0.0;
         // value tracker is set to not conduct a rolling average
-        ValueTrackerFloat humid_tracker = ValueTrackerFloat(&humid, 1.0);
+        ValueTrackerDouble humid_tracker = ValueTrackerDouble("humidity", &humid, 1.0);
 
         float humid_high_thresh;
         // this will indicate if the WeatherManager recommends
@@ -39,11 +39,10 @@ class WeatherManager {
         bool  humid_shutdown = false;
 
         /////////////////// Temperature ///////////////////
-        float temp = 0.0;
+        double temp = 0.0;
         // value tracker is set to not conduct a rolling average
-        ValueTrackerFloat temp_tracker = ValueTrackerFloat(&temp, 1.0);
+        ValueTrackerDouble temp_tracker = ValueTrackerDouble("temperature", &temp, 1.0);
 
-        float last_temp = 0.0;
         float temp_high_thresh;
         // indicates how much historesis is applied to the
         // high temp threshold to return to normal operation
