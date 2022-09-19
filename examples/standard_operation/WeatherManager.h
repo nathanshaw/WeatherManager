@@ -1,9 +1,9 @@
 #ifndef __WEATHER_MANAGER_H__
 #define __WEATHER_MANAGER_H__
 
-#include <ValueTrackerDouble.h>
-// #include <Wire.h>
-#include <Adafruit_SHTC3.h>
+#include "../ValueTracker/ValueTrackerDouble.h"
+#include <SHTSensor.h>
+#include <Wire.h>
 
 class WeatherManager {
     public:
@@ -26,7 +26,7 @@ class WeatherManager {
         unsigned long update_delay;
         ////////////////// Sensor /////////////////////////
         float sensor_active = false;
-        Adafruit_SHTC3 sensor = Adafruit_SHTC3();
+        SHTSensor sensor;
 
         /////////////////// Humidity //////////////////////
         double humid = 0.0;
@@ -68,17 +68,14 @@ void WeatherManager::print() {
 }
 
 bool WeatherManager::init() {
-    // Serial.println("Initalising WeatherManager by first opening Wire bus");
     // Wire.begin();
-    // Serial.println("Wire bus has began, now waiting a few seconds for it to settle");
-    Serial.println("Attempting to initalise sensor...");
-    delay(100); // let the bus stabilise
-    if (sensor.begin()) {
+    delay(5000); // let the bus stabilise
+    if (sensor.init()) {
         Serial.println("SHT temp/humid sensor was initialised");
         sensor_active = true;
     } else {
         for (int i = 2; i < 20; i++) {
-            if (sensor.begin() == false) {
+            if (sensor.init() == false) {
                 Serial.print("ERROR, SHT init() failed attempt #");Serial.println(i);
                 sensor_active = false;
                 delay(1000);
@@ -91,8 +88,6 @@ bool WeatherManager::init() {
             }
         }
     }
-    Serial.print("Exiting WeatherManager.init() with a result of: ");
-    Serial.println(sensor_active);
     return sensor_active;
 }
 
@@ -108,30 +103,32 @@ bool WeatherManager::update(){
         dprintln(p_readings, "SHT sensor is not ready for a new reading, exiting update");
         return false;
     }
-    // create temporary sensor "events" for temp and humid
-    sensors_event_t _humidity, _temp;
-    sensor.getEvent(&_humidity, &_temp);
-    humid = _humidity.relative_humidity;
-    humid_tracker.update();
-    dprint(p_readings, "humid:\t");dprintln(p_readings, humid);
-    if (humid >= humid_high_thresh) {
-        dprint(p_readings, "this is higher than the humid_high_thresh of: ");dprintln(p_readings, humid_high_thresh);
-        dprintln(p_readings, "FLAGGING A HUMIDITY SHUTDOWN CONDITION");
-        humid_shutdown = true;
+
+    if (sensor.readSample()) {
+        humid = sensor.getHumidity();
+        humid_tracker.update();
+        dprint(p_readings, "humid:\t");dprintln(p_readings, humid);
+        if (humid >= humid_high_thresh) {
+            dprint(p_readings, "this is higher than the humid_high_thresh of: ");dprintln(p_readings, humid_high_thresh);
+            dprintln(p_readings, "FLAGGING A HUMIDITY SHUTDOWN CONDITION");
+            humid_shutdown = true;
+            return true;
+        }
+        temp = sensor.getTemperature();
+        temp_tracker.update();
+        dprint(p_readings, "temp:\t");dprintln(p_readings, temp);
+        if (temp >= temp_high_thresh && temp_shutdown == false) {
+            dprint(p_readings, "this is higher than the temp_high_thresh of: ");dprintln(p_readings, temp_high_thresh);
+            dprintln(p_readings, "FLAGGING A TEMPERATURE SHUTDOWN CONDITION");
+            temp_shutdown = true;
+        } else if (temp <= (temp_high_thresh * (1.0 - temp_hysteresis))){ 
+            temp_shutdown = false;
+        }
+        last_reading_time = 0;
         return true;
-    }
-    temp = _temp.temperature;
-    temp_tracker.update();
-    dprint(p_readings, "temp:\t");dprintln(p_readings, temp);
-    if (temp >= temp_high_thresh && temp_shutdown == false) {
-        dprint(p_readings, "this is higher than the temp_high_thresh of: ");dprintln(p_readings, temp_high_thresh);
-        dprintln(p_readings, "FLAGGING A TEMPERATURE SHUTDOWN CONDITION");
-        temp_shutdown = true;
-    } else if (temp <= (temp_high_thresh * (1.0 - temp_hysteresis))){ 
-        temp_shutdown = false;
-    }
-    last_reading_time = 0;
-    return true;
+    }         // if we make it this far then there are no emergency shudown
+    // conditions and we can exit the program
+    return false;
 }
 
 #endif // __WEATHER_MANAGER_H__

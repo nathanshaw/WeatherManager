@@ -1,4 +1,4 @@
-#include <WeatherManager.h>
+#include "../WeatherManager.h"
 
 WeatherManager wm = WeatherManager(100, 100, 0.2);
 
