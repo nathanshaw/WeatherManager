@@ -12,8 +12,12 @@ class WeatherManager {
         bool update();
         bool getTempShutdown(){return temp_shutdown;};
         bool getHumidityShutdown(){return humid_shutdown;};
+
+        // getter functions
         float getTemperature() {return temp;};
         float getHumidity() {return humid;};
+        float getScaledTemp() {return temp_tracker.getScaled();};
+        float getScaledHumid() {return humid_tracker.getScaled();};
 
         void print();
         void setPrintReadings(bool p){p_readings = p;};
