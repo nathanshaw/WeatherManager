@@ -1,7 +1,9 @@
 #ifndef __WEATHER_MANAGER_H__
 #define __WEATHER_MANAGER_H__
 
+#include <Arduino.h> // this library is needed to make sure this is recognised as a Teensy library
 #include <ValueTrackerDouble.h>
+#include <PrintUtils.h>
 // #include <Wire.h>
 #include <Adafruit_SHTC3.h>
 
